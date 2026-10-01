@@ -3,3 +3,4 @@
 - [x] Add landing, swipe play, reveal, results, and review screens
 - [x] Apply editorial food-magazine styling and responsive interactions
 - [x] Verify preview, keyboard controls, swipe flow, and build health
+- [x] Replace unsupported food emoji with stable icons
