@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Check, ChevronLeft, RotateCcw, Sparkles, Utensils } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, RotateCcw, Salad, Sparkles, Utensils } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DISHES, shuffleDishes, type Dish, type DishAnswer } from "@/lib/dishes";
@@ -225,7 +225,7 @@ function LandingScreen({ onStart }: { onStart: () => void }) {
                 <span className="stamp px-3 py-1 font-mono text-[10px] uppercase tracking-[0.15em] text-primary">mystery</span>
               </div>
               <div className="my-10 text-center">
-                <div className="mx-auto mb-7 grid size-40 place-items-center rounded-full bg-accent/60 text-7xl shadow-inner sm:size-52 sm:text-8xl">🥒</div>
+                <div className="mx-auto mb-7 grid size-40 place-items-center rounded-full bg-accent/60 text-7xl shadow-inner sm:size-52 sm:text-8xl"><Salad className="size-20 stroke-[1.25] sm:size-28" /></div>
                 <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">is this a thing?</p>
                 <h2 className="display-font mt-3 text-3xl font-bold sm:text-4xl">Chocolate Pickles</h2>
               </div>
@@ -301,7 +301,7 @@ function GameScreen({
               <Sparkles className="size-5 shrink-0 opacity-60" />
             </div>
             <div className="max-w-xl">
-              <div className="mb-6 text-6xl sm:text-8xl">{dish.answer === "real" ? "🍽️" : "🍴"}</div>
+              <div className="mb-6 text-6xl sm:text-8xl">{dish.answer === "real" ? <Utensils className="size-16 stroke-[1.15] sm:size-24" /> : <Sparkles className="size-16 stroke-[1.15] sm:size-24" />}</div>
               <h2 className="display-font max-w-xl text-4xl font-black leading-[0.94] sm:text-6xl">{dish.name}</h2>
               <p className="mt-6 max-w-lg text-lg leading-7 opacity-80 sm:text-xl">{dish.description}</p>
             </div>
@@ -336,7 +336,7 @@ function RevealScreen({ answer, round, onNext }: { answer: AnswerRecord; round: 
         <div className="rounded-[1.6rem] border-2 border-foreground bg-card p-7 dish-card-shadow sm:p-12">
           <div className="flex flex-wrap items-center gap-4">
             <span className={`stamp px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.17em] ${answer.correct ? "text-chart-2" : "text-primary"}`}>
-              {isReal ? "real dish" : "delusion"} {isReal ? "🍴" : "💀"}
+              {isReal ? "real dish" : "delusion"}
             </span>
             <span className="font-mono text-xs uppercase tracking-[0.17em] text-muted-foreground">{answer.dish.name}</span>
           </div>
