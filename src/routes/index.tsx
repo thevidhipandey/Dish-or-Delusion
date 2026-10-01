@@ -7,6 +7,7 @@ import { DISHES, shuffleDishes, type Dish, type DishAnswer } from "@/lib/dishes"
 
 type Screen = "landing" | "play" | "reveal" | "results" | "review";
 type AnswerRecord = { dish: Dish; guess: DishAnswer; correct: boolean };
+type ScoreFeedback = "correct" | "wrong" | null;
 
 const TOTAL_ROUNDS = 10;
 
@@ -40,6 +41,8 @@ function DishOrDelusion() {
   const [reviewIndex, setReviewIndex] = useState(0);
   const [dragX, setDragX] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [handoff, setHandoff] = useState(false);
+  const [scoreFeedback, setScoreFeedback] = useState<ScoreFeedback>(null);
   const dragStart = useRef(0);
 
   const currentDish = dishes[round];
@@ -81,6 +84,8 @@ function DishOrDelusion() {
     setReviewIndex(0);
     setDragX(0);
     setBusy(false);
+    setHandoff(false);
+    setScoreFeedback(null);
     setScreen("play");
   }
 
@@ -96,9 +101,14 @@ function DishOrDelusion() {
         correct: currentDish.answer === guess,
       };
       setAnswers((previous) => [...previous, nextAnswer]);
-      setDragX(0);
-      setScreen("reveal");
-      setBusy(false);
+      setScoreFeedback(nextAnswer.correct ? "correct" : "wrong");
+      setHandoff(true);
+      window.setTimeout(() => {
+        setDragX(0);
+        setHandoff(false);
+        setScreen("reveal");
+        setBusy(false);
+      }, 180);
     }, 280);
   }
 
@@ -142,8 +152,11 @@ function DishOrDelusion() {
             dish={currentDish}
             round={round}
             score={correctCount}
+            scoreFeedback={scoreFeedback}
             dragX={dragX}
             busy={busy}
+            handoff={handoff}
+            previewDish={dishes[round + 1]}
             onAnswer={submitAnswer}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
@@ -151,7 +164,7 @@ function DishOrDelusion() {
           />
         )}
         {screen === "reveal" && currentAnswer && (
-          <RevealScreen answer={currentAnswer} round={round} onNext={nextDish} />
+          <RevealScreen answer={currentAnswer} round={round} score={correctCount} onNext={nextDish} />
         )}
         {screen === "results" && (
           <ResultsScreen score={correctCount} message={resultMessage} onAgain={startGame} onReview={() => {
@@ -244,8 +257,11 @@ function GameScreen({
   dish,
   round,
   score,
+  scoreFeedback,
   dragX,
   busy,
+  handoff,
+  previewDish,
   onAnswer,
   onPointerDown,
   onPointerMove,
@@ -254,8 +270,11 @@ function GameScreen({
   dish: Dish;
   round: number;
   score: number;
+  scoreFeedback: ScoreFeedback;
   dragX: number;
   busy: boolean;
+  handoff: boolean;
+  previewDish?: Dish;
   onAnswer: (guess: DishAnswer) => void;
   onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
@@ -273,7 +292,9 @@ function GameScreen({
         </div>
         <div className="text-right">
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">score</p>
-          <p className="display-font text-2xl font-bold">{score} / {round}</p>
+          <p className={`score-counter display-font text-2xl font-bold ${scoreFeedback === "correct" ? "score-pop" : scoreFeedback === "wrong" ? "score-shake" : ""}`}>
+            {score} / {round}
+          </p>
         </div>
       </div>
       <div className="mb-5 h-1.5 w-full max-w-2xl overflow-hidden rounded-full bg-secondary">
@@ -288,10 +309,19 @@ function GameScreen({
         role="application"
         aria-label="Swipe dish card left for delusion or right for real dish"
       >
-        <div className="absolute inset-x-5 top-4 h-full rounded-[1.6rem] border border-border bg-secondary/80" />
-        <div className="absolute inset-x-2 top-2 h-full rounded-[1.6rem] border border-border bg-accent/35" />
+        <div className={`pointer-events-none absolute inset-x-2 top-2 z-0 h-full overflow-hidden rounded-[1.6rem] border border-border bg-accent/35 transition-all duration-200 ease-out ${handoff ? "translate-y-0 scale-100 opacity-100" : "translate-y-3 scale-[0.97] opacity-75"}`} aria-hidden="true">
+          {previewDish ? (
+            <div className={`flex h-full flex-col justify-between rounded-xl p-6 opacity-70 sm:p-8 ${accentClasses[previewDish.color]}`}>
+              <div className="flex items-start justify-between font-mono text-[10px] uppercase tracking-[0.2em]">
+                <span>next dish</span>
+                <Sparkles className="size-4" />
+              </div>
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em]">case file / ???</span>
+            </div>
+          ) : <div className="h-full bg-secondary/60" />}
+        </div>
         <div
-          className="relative aspect-[0.82] overflow-hidden rounded-[1.6rem] border-2 border-foreground bg-card p-5 dish-card-shadow transition-transform duration-200 ease-out sm:aspect-[1.15] sm:p-8"
+          className="relative z-10 aspect-[0.82] overflow-hidden rounded-[1.6rem] border-2 border-foreground bg-card p-5 dish-card-shadow transition-transform duration-200 ease-out sm:aspect-[1.15] sm:p-8"
           style={{ transform: `translateX(${dragX}px) rotate(${tilt}deg)`, transitionDuration: busy ? "280ms" : dragX === 0 ? "220ms" : "0ms" }}
         >
           {swipeLabel && <span className={`stamp absolute top-7 z-10 px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.16em] ${dragX > 0 ? "right-7 text-primary" : "left-7 text-chart-5"}`}>{swipeLabel}</span>}
@@ -324,31 +354,36 @@ function GameScreen({
   );
 }
 
-function RevealScreen({ answer, round, onNext }: { answer: AnswerRecord; round: number; onNext: () => void }) {
+function RevealScreen({ answer, round, score, onNext }: { answer: AnswerRecord; round: number; score: number; onNext: () => void }) {
   const isReal = answer.dish.answer === "real";
   return (
     <section className="flex flex-1 items-center justify-center py-12">
-      <div className="float-in w-full max-w-2xl">
+      <div className="reveal-stage float-in w-full max-w-2xl">
         <div className="mb-7 flex items-center justify-between font-mono text-xs uppercase tracking-[0.19em] text-muted-foreground">
           <span>the reveal · {String(round + 1).padStart(2, "0")} / {TOTAL_ROUNDS}</span>
-          <span className={answer.correct ? "text-chart-2" : "text-primary"}>{answer.correct ? "you nailed it" : "plot twist"}</span>
+          <span className={`score-feedback ${answer.correct ? "text-chart-2" : "text-primary"}`}>
+            <span className="mr-3 hidden sm:inline">score {score} / {round + 1}</span>{answer.correct ? "you nailed it" : "plot twist"}
+          </span>
         </div>
-        <div className="rounded-[1.6rem] border-2 border-foreground bg-card p-7 dish-card-shadow sm:p-12">
-          <div className="flex flex-wrap items-center gap-4">
+        <div className={`relative rounded-[1.6rem] border-2 border-foreground bg-card p-7 dish-card-shadow sm:p-12 ${answer.correct ? "reveal-correct" : "reveal-wrong"}`}>
+          {answer.correct && <ConfettiBurst />}
+          <div className="reveal-verdict flex flex-wrap items-center gap-4">
             <span className={`stamp px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.17em] ${answer.correct ? "text-chart-2" : "text-primary"}`}>
               {isReal ? "real dish" : "delusion"}
             </span>
             <span className="font-mono text-xs uppercase tracking-[0.17em] text-muted-foreground">{answer.dish.name}</span>
           </div>
-          <h1 className="display-font mt-9 text-5xl font-black leading-none sm:text-7xl">{answer.correct ? "You were right." : isReal ? "It was real." : "You caught the nonsense."}</h1>
-          <div className="editorial-rule my-9" />
-          <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-primary">the story</p>
-          <p className="mt-4 max-w-xl text-lg leading-8 text-muted-foreground">{answer.dish.reveal}</p>
-          {!isReal && answer.dish.fakeExplanation && <p className="mt-5 border-l-2 border-accent pl-4 text-sm italic leading-6 text-muted-foreground">P.S. {answer.dish.fakeExplanation}</p>}
-          <div className="mt-10 grid grid-cols-3 gap-3 border-t border-border pt-6">
-            <Info label="origin" value={answer.dish.origin} />
-            <Info label="category" value={answer.dish.category} />
-            <Info label="verdict" value={isReal ? "real" : "fake"} />
+          <div className="reveal-body">
+            <h1 className="display-font mt-9 text-5xl font-black leading-none sm:text-7xl">{answer.correct ? "You were right." : isReal ? "It was real." : "You caught the nonsense."}</h1>
+            <div className="editorial-rule my-9" />
+            <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-primary">the story</p>
+            <p className="mt-4 max-w-xl text-lg leading-8 text-muted-foreground">{answer.dish.reveal}</p>
+            {!isReal && answer.dish.fakeExplanation && <p className="mt-5 border-l-2 border-accent pl-4 text-sm italic leading-6 text-muted-foreground">P.S. {answer.dish.fakeExplanation}</p>}
+            <div className="mt-10 grid grid-cols-3 gap-3 border-t border-border pt-6">
+              <Info label="origin" value={answer.dish.origin} />
+              <Info label="category" value={answer.dish.category} />
+              <Info label="verdict" value={isReal ? "real" : "fake"} />
+            </div>
           </div>
         </div>
         <Button type="button" onClick={onNext} className="ink-button mt-8 h-14 w-full rounded-full bg-foreground font-mono text-xs font-bold uppercase tracking-[0.17em] text-background hover:bg-foreground">
@@ -356,6 +391,14 @@ function RevealScreen({ answer, round, onNext }: { answer: AnswerRecord; round: 
         </Button>
       </div>
     </section>
+  );
+}
+
+function ConfettiBurst() {
+  return (
+    <div className="confetti-burst" aria-hidden="true">
+      {Array.from({ length: 12 }, (_, index) => <span key={index} className={`confetti-particle confetti-${index + 1}`} />)}
+    </div>
   );
 }
 
