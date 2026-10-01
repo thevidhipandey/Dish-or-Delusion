@@ -274,7 +274,7 @@ function GameScreen({
   dragX: number;
   busy: boolean;
   handoff: boolean;
-  previewDish?: Dish;
+  previewDish: Dish | undefined;
   onAnswer: (guess: DishAnswer) => void;
   onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
