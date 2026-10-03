@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep dish imagery in one imported contact-sheet asset and crop it by dish ID, so all game screens share a cohesive offline visual set.

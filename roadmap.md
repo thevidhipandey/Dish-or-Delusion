@@ -5,4 +5,4 @@
 - [x] Verify preview, keyboard controls, swipe flow, and build health
 - [x] Replace unsupported food emoji with stable icons
 
-- [ ] Apply the uploaded major visual redesign while preserving all game logic and dish content.
+- [x] Apply the uploaded major visual redesign while preserving all game logic and dish content.
