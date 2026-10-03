@@ -84,23 +84,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Dish or Delusion — A suspiciously tasty guessing game" },
       { property: "og:description", content: "Some of these are real. Unfortunately." },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/og-image.jpg" },
+      { property: "og:image", content: "https://YOUR-SITE-URL/og-image.png" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
-      { property: "og:image:type", content: "image/jpeg" },
+      { property: "og:image:type", content: "image/png" },
       {
         property: "og:image:alt",
         content:
           "Dish or Delusion — a chef's hat above a question mark, ringed by tacos, a burger and a bowl of noodles.",
       },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "/og-image.jpg" },
+      { name: "twitter:image", content: "https://YOUR-SITE-URL/og-image.png" },
       {
         name: "twitter:image:alt",
         content:
           "Dish or Delusion — a chef's hat above a question mark, ringed by tacos, a burger and a bowl of noodles.",
       },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -110,10 +109,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Cabin:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" },
-      { rel: "icon", href: "/favicon.ico", sizes: "any" },
-      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
-      { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
-      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "apple-touch-icon", href: "/favicon.png" },
     ],
   }),
   shellComponent: RootShell,
