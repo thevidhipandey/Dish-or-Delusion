@@ -1,16 +1,28 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, ChevronLeft, RotateCcw, Salad, Sparkles, Utensils } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { DISHES, shuffleDishes, type Dish, type DishAnswer } from "@/lib/dishes";
+import { DISHES, dealFromPool, type Dish, type DishAnswer } from "@/lib/dishes";
+import { readUsedPool, writeUsedPool } from "@/lib/used-pool";
 import dishContactSheet from "@/assets/dish-contact-sheet.jpg";
 
 type Screen = "landing" | "play" | "reveal" | "results" | "review";
 type AnswerRecord = { dish: Dish; guess: DishAnswer; correct: boolean };
 type ScoreFeedback = "correct" | "wrong" | null;
 
-const TOTAL_ROUNDS = 10;
+// 5 dishes per game. The number of games per cycle is derived from the actual
+// dataset size (see gamesPerCycle) — never hardcoded.
+const TOTAL_ROUNDS = 5;
+
+// Display-only case-file numbers. Deliberately NOT the dish id: ids 1-30 are
+// real and 31-60 fake, so showing the raw id would leak the answer. This is a
+// fixed bijection over 1-60 (37 is coprime with 60), which scrambles the id
+// into a number with no correlation to the dish's answer.
+const caseFileNumbers: Record<number, number> = {};
+for (let id = 1; id <= 60; id += 1) {
+  caseFileNumbers[id] = ((id - 1) * 37) % 60 + 1;
+}
 
 const accentClasses: Record<Dish["color"], string> = {
   tomato: "bg-primary text-primary-foreground",
@@ -18,11 +30,6 @@ const accentClasses: Record<Dish["color"], string> = {
   sage: "bg-chart-2 text-foreground",
   plum: "bg-chart-5 text-primary-foreground",
   ocean: "bg-chart-3 text-primary-foreground",
-};
-
-const imagePositions: Record<number, { left: string; top: string }> = {
-  1: { left: "0%", top: "0%" }, 2: { left: "-100%", top: "0%" }, 3: { left: "-200%", top: "0%" }, 4: { left: "-300%", top: "0%" }, 5: { left: "-400%", top: "0%" },
-  6: { left: "0%", top: "-100%" }, 7: { left: "-100%", top: "-100%" }, 8: { left: "-200%", top: "-100%" }, 9: { left: "-300%", top: "-100%" }, 10: { left: "-400%", top: "-100%" },
 };
 
 export const Route = createFileRoute("/")({
@@ -57,10 +64,10 @@ function DishOrDelusion() {
   const reviewAnswer = answers[reviewIndex];
 
   const resultMessage = useMemo(() => {
-    if (correctCount === 10) return "Your food knowledge is suspiciously powerful.";
-    if (correctCount >= 8) return "You have clearly spent too much time thinking about food.";
-    if (correctCount >= 5) return "Honestly? Respectable.";
-    if (correctCount >= 3) return "Your culinary instincts need supervision.";
+    if (correctCount === 5) return "Your food knowledge is suspiciously powerful.";
+    if (correctCount >= 4) return "You have clearly spent too much time thinking about food.";
+    if (correctCount >= 3) return "Honestly? Respectable.";
+    if (correctCount >= 2) return "Your culinary instincts need supervision.";
     return "You have been successfully deceived by lunch.";
   }, [correctCount]);
 
@@ -83,8 +90,13 @@ function DishOrDelusion() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [screen, busy, currentDish]);
 
-  function startGame() {
-    setDishes(shuffleDishes(DISHES));
+function startGame() {
+  // Deal from the dishes not yet used this cycle and persist the updated pool,
+  // so the next Play Again (or a page reload in this session) continues the
+  // cycle rather than reshuffling the whole dataset.
+    const { hand, next } = dealFromPool(TOTAL_ROUNDS, readUsedPool());
+    writeUsedPool(next);
+    setDishes(hand);
     setRound(0);
     setAnswers([]);
     setReviewIndex(0);
@@ -150,7 +162,7 @@ function DishOrDelusion() {
 
   return (
     <main className="dish-app">
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-8 sm:px-8">
+      <div className="app-shell relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-8 sm:px-8">
         <Header screen={screen} onHome={() => setScreen("landing")} />
         {screen === "landing" && <LandingScreen onStart={startGame} />}
         {screen === "play" && currentDish && (
@@ -213,10 +225,10 @@ function Header({ screen, onHome }: { screen: Screen; onHome: () => void }) {
 function LandingScreen({ onStart }: { onStart: () => void }) {
   return (
     <section className="landing-stage flex flex-1 items-center py-8 sm:py-14">
-      <div className="grid w-full items-center gap-8 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="float-in relative z-10 py-6">
+      <div className="my-auto grid w-full items-center gap-8 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="landing-copy float-in relative z-10 py-6">
           <p className="micro-label mb-5 text-primary">the culinary guessing game · swipe responsibly</p>
-          <h1 className="display-font brand-title max-w-5xl text-[clamp(4.3rem,11vw,10rem)] leading-[0.75] text-foreground">
+          <h1 className="display-font brand-title max-w-5xl text-[clamp(4.3rem,min(11vw,17vh),10rem)] leading-[0.75] text-foreground">
             Dish <span className="zine-highlight">or</span><br /> Delusion
           </h1>
           <p className="mt-8 max-w-xl text-xl font-bold leading-tight text-foreground sm:text-3xl">
@@ -237,17 +249,20 @@ function LandingScreen({ onStart }: { onStart: () => void }) {
         <div className="landing-collage relative mx-auto w-full max-w-lg" aria-hidden="true">
           <div className="collage-label collage-label-one">100% EDIBLE-ISH</div>
           <div className="collage-label collage-label-two">TRUST YOUR GUT.</div>
-          <div className="collage-photo collage-photo-main">
-            <DishImage dish={DISHES[2]} eager />
+          {/* Decorative hero shots, cropped from the shared contact sheet by dish
+              id. Picked for appetite appeal: Funeral Potatoes (a plated serving)
+              and pani puri, both bright and appetising rather than grisly. */}
+          <div className="collage-photo collage-photo-main dish-frame">
+            <DishImage dish={DISHES[18]} eager />
             <span>QUESTIONABLE CUISINE AHEAD</span>
           </div>
-          <div className="collage-photo collage-photo-small">
-            <DishImage dish={DISHES[7]} eager />
+          <div className="collage-photo collage-photo-small dish-frame">
+            <DishImage dish={DISHES[57]} eager />
           </div>
           <div className="sticker sticker-one">HOT<br />TAKE</div>
           <div className="sticker sticker-two"><Salad className="size-10" /></div>
           <div className="sauce-splat" />
-          <div className="absolute bottom-1 right-4 -rotate-6 bg-accent px-3 py-2 text-xs font-black uppercase">real food. fake confidence.</div>
+          <div className="absolute bottom-1 right-4 -rotate-6 whitespace-nowrap bg-accent px-3 py-2 text-xs font-black uppercase">real food. fake confidence.</div>
             </div>
       </div>
     </section>
@@ -285,10 +300,10 @@ function GameScreen({
   const swipeLabel = dragX > 20 ? "real dish" : dragX < -20 ? "delusion" : "";
 
   return (
-    <section className="flex flex-1 flex-col items-center py-5 sm:py-8">
-      <div className="mb-5 flex w-full max-w-4xl items-end justify-between">
+    <section className="game-stage flex flex-1 flex-col items-center py-5 sm:py-8">
+      <div className="game-round-header mb-5 flex w-full max-w-4xl items-end justify-between">
         <div>
-          <p className="micro-label text-primary">round {String(round + 1).padStart(2, "0")} / 10</p>
+          <p className="micro-label text-primary">round {String(round + 1).padStart(2, "0")} / {TOTAL_ROUNDS}</p>
           <h1 className="display-font mt-1 text-3xl sm:text-5xl">What&apos;s the verdict?</h1>
         </div>
         <div className="text-right">
@@ -298,7 +313,7 @@ function GameScreen({
           </p>
         </div>
       </div>
-      <div className="mb-5 flex h-2 w-full max-w-4xl gap-1" aria-label={`Round ${round + 1} of ${TOTAL_ROUNDS}`}>
+      <div className="game-progress mb-5 flex h-2 w-full max-w-4xl gap-1" aria-label={`Round ${round + 1} of ${TOTAL_ROUNDS}`}>
         {Array.from({ length: TOTAL_ROUNDS }, (_, index) => <span key={index} className={`h-full flex-1 transition-colors ${index <= round ? "bg-primary" : "bg-secondary"}`} />)}
       </div>
       <div
@@ -327,24 +342,24 @@ function GameScreen({
         >
           {swipeLabel && <span className={`swipe-stamp absolute top-8 z-30 border-4 px-5 py-3 text-xl font-black uppercase ${dragX > 0 ? "right-8 border-chart-2 text-chart-2" : "left-8 border-chart-5 text-chart-5"}`} style={{ opacity: Math.min(1, Math.abs(dragX) / 110) }}>{swipeLabel}</span>}
           <div className="grid h-full gap-4 sm:grid-cols-[0.9fr_1.1fr] sm:gap-6">
-            <div className="relative min-h-56 overflow-hidden bg-secondary sm:min-h-full">
+            <div className="dish-frame relative min-h-56 overflow-hidden bg-secondary sm:min-h-full">
               <DishImage dish={dish} eager />
               <span className={`absolute bottom-3 left-3 z-10 -rotate-2 px-3 py-2 text-xs font-black uppercase ${accentClasses[dish.color]}`}>{dish.origin}</span>
             </div>
-            <div className="flex flex-col justify-between p-3 sm:p-5">
+            <div className="game-card-body flex flex-col justify-between p-3 sm:p-5">
               <div>
-                <div className="micro-label flex items-start justify-between gap-4 text-muted-foreground"><span>case file / {String(dish.id).padStart(3, "0")}</span><Sparkles className="size-4" /></div>
+                <div className="micro-label flex items-start justify-between gap-4 text-muted-foreground"><span>case file / {String(caseFileNumbers[dish.id] ?? dish.id).padStart(3, "0")}</span><Sparkles className="size-4" /></div>
                 <h2 className="display-font mt-5 text-5xl leading-[0.85] sm:text-7xl">{dish.name}</h2>
                 <p className="mt-6 max-w-lg text-base font-semibold leading-7 text-muted-foreground sm:text-lg">{dish.description}</p>
               </div>
-              <div className="mt-6 flex items-center justify-between border-t-2 border-foreground pt-4 text-xs font-black uppercase">
+              <div className="game-card-foot mt-6 flex items-center justify-between border-t-2 border-foreground pt-4 text-xs font-black uppercase">
                 <span>slide to decide</span><span className="bg-accent px-2 py-1">{dish.category}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div className="mt-5 flex w-full max-w-4xl items-center justify-between gap-3">
+      <div className="game-choices mt-5 flex w-full max-w-4xl items-center justify-between gap-3">
         <Button type="button" variant="outline" onClick={() => onAnswer("fake")} disabled={busy} className="choice-button h-14 flex-1 rounded-none border-2 border-chart-5 bg-background text-xs font-black uppercase text-chart-5 hover:bg-chart-5 hover:text-primary-foreground sm:px-8">
           <ArrowLeft className="size-4" /> Delusion
         </Button>
@@ -360,15 +375,15 @@ function GameScreen({
 function RevealScreen({ answer, round, score, onNext }: { answer: AnswerRecord; round: number; score: number; onNext: () => void }) {
   const isReal = answer.dish.answer === "real";
   return (
-    <section className="flex flex-1 items-center justify-center py-8 sm:py-12">
-      <div className="reveal-stage float-in w-full max-w-4xl">
+    <section className="reveal-screen flex flex-1 items-center justify-center py-8 sm:py-12">
+      <div className="reveal-stage float-in my-auto w-full max-w-4xl">
         <div className="micro-label mb-5 flex items-center justify-between text-muted-foreground">
           <span>the reveal · {String(round + 1).padStart(2, "0")} / {TOTAL_ROUNDS}</span>
           <span className={`score-feedback ${answer.correct ? "text-chart-2" : "text-primary"}`}>
             <span className="mr-3 hidden sm:inline">score {score} / {round + 1}</span>{answer.correct ? "you nailed it" : "plot twist"}
           </span>
         </div>
-        <div className={`relative border-2 border-foreground bg-card p-5 dish-card-shadow sm:p-8 ${answer.correct ? "reveal-correct" : "reveal-wrong"}`}>
+        <div className={`reveal-card relative border-2 border-foreground bg-card p-5 dish-card-shadow sm:p-8 ${answer.correct ? "reveal-correct" : "reveal-wrong"}`}>
           {answer.correct && <ConfettiBurst />}
           <div className="reveal-verdict flex flex-wrap items-center gap-4">
             <span className={`swipe-stamp -rotate-3 border-4 px-5 py-2 text-xl font-black uppercase ${answer.correct ? "border-chart-2 text-chart-2" : "border-primary text-primary"}`}>
@@ -381,9 +396,9 @@ function RevealScreen({ answer, round, score, onNext }: { answer: AnswerRecord; 
             {!answer.correct && <p className="mt-4 text-sm font-black text-chart-5">bro really believed that 💀</p>}
             <div className="editorial-rule my-9" />
             <p className="micro-label text-primary">the story</p>
-            <p className="mt-4 max-w-xl text-lg leading-8 text-muted-foreground">{answer.dish.reveal}</p>
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-muted-foreground">{answer.dish.reveal}</p>
             {!isReal && answer.dish.fakeExplanation && <p className="mt-5 border-l-2 border-accent pl-4 text-sm italic leading-6 text-muted-foreground">P.S. {answer.dish.fakeExplanation}</p>}
-            <div className="mt-10 grid grid-cols-3 gap-3 border-t border-border pt-6">
+            <div className="reveal-info mt-10 grid grid-cols-3 gap-3 border-t border-border pt-6">
               <Info label="origin" value={answer.dish.origin} />
               <Info label="category" value={answer.dish.category} />
               <Info label="verdict" value={isReal ? "real" : "fake"} />
@@ -407,17 +422,17 @@ function ConfettiBurst() {
 }
 
 function ResultsScreen({ score, message, onAgain, onReview }: { score: number; message: string; onAgain: () => void; onReview: () => void }) {
-  const title = score >= 8 ? "Suspiciously knowledgeable" : score >= 5 ? "Culinary menace" : "Easily fooled";
+  const title = score >= 4 ? "Suspiciously knowledgeable" : score >= 3 ? "Culinary menace" : "Easily fooled";
   return (
-    <section className="flex flex-1 items-center justify-center py-14">
-      <div className="float-in w-full max-w-3xl text-center">
+    <section className="results-screen flex flex-1 items-center justify-center py-14">
+      <div className="float-in my-auto w-full max-w-3xl text-center">
         <p className="micro-label text-primary">your verdict</p>
         <div className="result-card relative mx-auto my-7 max-w-2xl border-2 border-foreground bg-card p-7 dish-card-shadow sm:p-10">
           <span className="absolute -right-3 -top-4 rotate-3 bg-accent px-4 py-2 text-xs font-black uppercase">screenshot this</span>
-          <h1 className="display-font text-[clamp(6rem,20vw,11rem)] leading-[0.75] text-foreground">{score}<span className="text-primary">/</span>10</h1>
+          <h1 className="display-font text-[clamp(6rem,20vw,11rem)] leading-[0.75] text-foreground">{score}<span className="text-primary">/</span>{TOTAL_ROUNDS}</h1>
           <p className="mt-7 text-sm font-black uppercase text-chart-5">{title}</p>
-          <div className="mx-auto mb-6 flex max-w-xs justify-center gap-1.5" aria-label={`${score} out of 10 correct`}>
-            {Array.from({ length: 10 }, (_, index) => <span key={index} className={`mt-7 h-3 flex-1 ${index < score ? "bg-primary" : "bg-secondary"}`} />)}
+          <div className="mx-auto mb-6 flex max-w-xs justify-center gap-1.5" aria-label={`${score} out of ${TOTAL_ROUNDS} correct`}>
+            {Array.from({ length: TOTAL_ROUNDS }, (_, index) => <span key={index} className={`mt-7 h-3 flex-1 ${index < score ? "bg-primary" : "bg-secondary"}`} />)}
           </div>
           <p className="text-xl font-bold leading-tight sm:text-2xl">“{message}”</p>
         </div>
@@ -433,23 +448,23 @@ function ResultsScreen({ score, message, onAgain, onReview }: { score: number; m
 function ReviewScreen({ answer, index, total, onBack, onPrevious, onNext }: { answer: AnswerRecord; index: number; total: number; onBack: () => void; onPrevious: () => void; onNext: () => void }) {
   const isReal = answer.dish.answer === "real";
   return (
-    <section className="flex flex-1 justify-center py-10 sm:py-14">
-      <div className="float-in w-full max-w-3xl">
-        <Button type="button" variant="ghost" onClick={onBack} className="mb-8 h-auto p-0 text-xs font-black uppercase text-muted-foreground hover:bg-transparent hover:text-foreground"><ChevronLeft className="size-4" /> back to verdict</Button>
-        <div className="mb-7 flex items-end justify-between">
+    <section className="review-screen flex flex-1 justify-center py-10 sm:py-14">
+      <div className="float-in my-auto w-full max-w-3xl">
+        <Button type="button" variant="ghost" onClick={onBack} className="review-back mb-8 h-auto p-0 text-xs font-black uppercase text-muted-foreground hover:bg-transparent hover:text-foreground"><ChevronLeft className="size-4" /> back to verdict</Button>
+        <div className="review-head mb-7 flex items-end justify-between">
           <div><p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">dish review</p><h1 className="display-font mt-2 text-4xl font-bold">The evidence locker</h1></div>
           <span className="font-mono text-xs uppercase tracking-[0.17em] text-muted-foreground">{String(index + 1).padStart(2, "0")} / {total}</span>
         </div>
-        <div className="border-2 border-foreground bg-card p-5 dish-card-shadow sm:p-8">
+        <div className="review-card border-2 border-foreground bg-card p-5 dish-card-shadow sm:p-8">
           <div className="flex items-center justify-between"><span className={`stamp px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.17em] ${answer.correct ? "text-chart-2" : "text-primary"}`}>{answer.correct ? "correct" : "missed"}</span><span className="font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground">you said: {answer.guess === "real" ? "real" : "delusion"}</span></div>
-          <div className="mt-8 grid gap-6 sm:grid-cols-[0.8fr_1.2fr]"><div className="relative min-h-64 overflow-hidden"><DishImage dish={answer.dish} /></div><div><h2 className="display-font text-5xl leading-none sm:text-7xl">{answer.dish.name}</h2>
+          <div className="review-grid mt-8 grid gap-6 sm:grid-cols-[0.8fr_1.2fr]"><div className="dish-frame relative min-h-64 overflow-hidden"><DishImage dish={answer.dish} /></div><div className="review-text"><h2 className="display-font text-5xl leading-none sm:text-7xl">{answer.dish.name}</h2>
           <p className="mt-5 text-lg leading-8 text-muted-foreground">{answer.dish.description}</p>
           <div className="editorial-rule my-8" />
           <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-primary">{isReal ? "the real story" : "the delusion report"}</p>
           <p className="mt-4 max-w-2xl text-base leading-8 text-muted-foreground">{answer.dish.reveal}</p>
-          <div className="mt-8 grid grid-cols-3 gap-3 border-t border-border pt-6"><Info label="origin" value={answer.dish.origin} /><Info label="category" value={answer.dish.category} /><Info label="verdict" value={isReal ? "real" : "fake"} /></div></div></div>
+          <div className="review-info mt-8 grid grid-cols-3 gap-3 border-t border-border pt-6"><Info label="origin" value={answer.dish.origin} /><Info label="category" value={answer.dish.category} /><Info label="verdict" value={isReal ? "real" : "fake"} /></div></div></div>
         </div>
-        <div className="mt-8 flex justify-between gap-3"><Button type="button" variant="outline" onClick={onPrevious} disabled={index === 0} className="h-12 rounded-full border-2 border-foreground px-5 font-mono text-xs uppercase tracking-[0.15em]"><ArrowLeft className="size-4" /> previous</Button><Button type="button" variant="outline" onClick={onNext} disabled={index === total - 1} className="h-12 rounded-full border-2 border-foreground px-5 font-mono text-xs uppercase tracking-[0.15em]">next <ArrowRight className="size-4" /></Button></div>
+        <div className="review-nav mt-8 flex justify-between gap-3"><Button type="button" variant="outline" onClick={onPrevious} disabled={index === 0} className="h-12 rounded-full border-2 border-foreground px-5 font-mono text-xs uppercase tracking-[0.15em]"><ArrowLeft className="size-4" /> previous</Button><Button type="button" variant="outline" onClick={onNext} disabled={index === total - 1} className="h-12 rounded-full border-2 border-foreground px-5 font-mono text-xs uppercase tracking-[0.15em]">next <ArrowRight className="size-4" /></Button></div>
       </div>
     </section>
   );
@@ -461,6 +476,11 @@ function Info({ label, value }: { label: string; value: string }) {
 
 function DishImage({ dish, eager = false }: { dish: Dish | undefined; eager?: boolean }) {
   if (!dish) return null;
-  const position = imagePositions[dish.id] ?? { left: "0%", top: "0%" };
-  return <img src={dishContactSheet} alt={`${dish.name} editorial food photograph`} className="dish-photo" style={position} loading={eager ? "eager" : "lazy"} width={1920} height={768} />;
+  // The contact sheet holds 60 cells (10x6), one related photo per dish:
+  // cell index = id - 1, laid out left-to-right then top-to-bottom. Ids 1-60
+  // map exactly, so every dish in the pool lands on its own unique crop.
+  const cell = dish.id - 1;
+  const col = cell % 10;
+  const row = Math.floor(cell / 10);
+  return <img src={dishContactSheet} alt={`${dish.name} editorial food photograph`} className="dish-photo" style={{ "--dish-col": String(col), "--dish-row": String(row) } as CSSProperties} loading={eager ? "eager" : "lazy"} width={4800} height={2880} />;
 }

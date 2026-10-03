@@ -198,18 +198,19 @@
   .choice-button:hover { transform: translateY(-2px) rotate(-1deg); box-shadow: 5px 5px 0 var(--color-foreground); }
   .game-card { transform-origin: center 90%; }
   .preview-card { box-shadow: 5px 5px 0 var(--color-foreground); }
-  .dish-photo { position: absolute; max-width: none; width: 500%; height: 200%; object-fit: fill; }
+  .dish-frame { container-type: size; }
+  .dish-photo { --dish-col: 0; --dish-row: 0; --cell: max(100cqw, 100cqh); position: absolute; left: 0; top: 0; max-width: none; width: calc(var(--cell) * 10); height: calc(var(--cell) * 6); object-fit: fill; transform: translate(calc(-10% * var(--dish-col) - (var(--cell) - 100cqw) / 2), calc(-16.66667% * var(--dish-row) - (var(--cell) - 100cqh) / 2)); }
   .swipe-stamp { background: var(--color-card); box-shadow: 3px 3px 0 currentColor; transform: rotate(-6deg); }
 
   .landing-stage::before { content: "*"; position: absolute; left: 2%; top: 18%; color: var(--color-chart-5); font: 8rem/1 "Abril Fatface"; transform: rotate(15deg); opacity: 0.13; }
   .landing-collage { min-height: 32rem; }
   .collage-photo { position: absolute; overflow: hidden; border: 3px solid var(--color-foreground); background: var(--color-card); box-shadow: 7px 7px 0 var(--color-foreground); }
-  .collage-photo-main { inset: 2.5rem 1rem 3rem 2rem; transform: rotate(3deg); }
-  .collage-photo-main span { position: absolute; bottom: 0.8rem; left: 0.8rem; background: var(--color-primary); color: var(--color-primary-foreground); padding: 0.45rem 0.65rem; font-weight: 900; font-size: 0.7rem; }
-  .collage-photo-small { right: -1rem; bottom: 0; width: 42%; height: 38%; transform: rotate(-8deg); }
+  .collage-photo-main { inset: 2.25rem 1rem 3.25rem 1rem; transform: rotate(3deg); }
+  .collage-photo-main span { position: absolute; bottom: 0.8rem; left: 0.8rem; max-width: 44%; background: var(--color-primary); color: var(--color-primary-foreground); padding: 0.45rem 0.65rem; font-weight: 900; font-size: 0.7rem; line-height: 1.35; }
+  .collage-photo-small { right: -1rem; bottom: -1rem; width: 45%; height: 42%; transform: rotate(-8deg); }
   .collage-label { position: absolute; z-index: 5; border: 2px solid var(--color-foreground); padding: 0.55rem 0.7rem; font-size: 0.67rem; font-weight: 900; }
   .collage-label-one { top: 0; right: 0; background: var(--color-accent); transform: rotate(5deg); }
-  .collage-label-two { bottom: 0.8rem; left: 0; background: var(--color-chart-5); color: var(--color-primary-foreground); transform: rotate(4deg); }
+  .collage-label-two { top: 56%; left: -0.5rem; background: var(--color-chart-5); color: var(--color-primary-foreground); transform: rotate(4deg); }
   .sticker { position: absolute; z-index: 6; display: grid; place-items: center; border: 2px solid var(--color-foreground); }
   .sticker-one { left: 0; top: 8%; width: 5.5rem; height: 5.5rem; border-radius: 50%; background: var(--color-chart-5); color: var(--color-primary-foreground); font-weight: 900; line-height: 0.9; transform: rotate(-12deg); }
   .sticker-two { right: 4%; top: 36%; width: 4.5rem; height: 4.5rem; background: var(--color-accent); transform: rotate(12deg); }
@@ -298,9 +299,72 @@
 @media (max-width: 639px) {
   .brand-title { text-shadow: 3px 3px 0 var(--color-secondary); }
   .landing-collage { min-height: 24rem; }
-  .collage-photo-main { inset: 2rem 1.5rem 2.5rem 1.5rem; }
+  .collage-photo-main { inset: 2rem 1.25rem 3rem 1.25rem; }
   .game-card { min-height: 39rem; }
   .dish-photo { min-height: 14rem; }
+}
+
+/* Desktop only (>=1024px): the app owns exactly one viewport, so the page
+   itself never scrolls — every screen is visible at once. Spacing and display
+   type are tightened so each screen fits common desktop heights; anything that
+   still cannot fit (very short windows, the long review screen) scrolls inside
+   its own screen panel instead of the page. Below 1024px (tablets, narrow
+   windows) the natural page scrolling is kept. */
+@media (min-width: 1024px) {
+  html, body { overflow: hidden; }
+
+  .dish-app { height: 100vh; }
+  .app-shell { height: 100%; min-height: 0; overflow: hidden; padding-bottom: 1rem; }
+  .app-shell > header { flex: none; padding-top: 0.75rem; padding-bottom: 0.75rem; }
+  .app-shell > section {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* Landing */
+  .landing-stage { padding-top: 2rem; padding-bottom: 2rem; }
+  .landing-stage::before { position: fixed; }
+  .landing-copy { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .landing-collage { min-height: min(32rem, 62vh); }
+  .landing-note-left { left: 0; }
+  .collage-photo-small { right: 0; }
+
+  /* Play */
+  .game-stage { padding-top: 0.75rem; padding-bottom: 0.75rem; justify-content: safe center; }
+  .game-round-header { margin-bottom: 0.75rem; }
+  .game-progress { margin-bottom: 1rem; }
+  .game-choices { margin-top: 1rem; }
+  .game-card { min-height: 22.5rem; padding: 1rem; }
+  .game-card h2 { margin-top: 1rem; font-size: 3.75rem; }
+  .game-card-body { padding: 1rem; }
+  .game-card-foot { margin-top: 1rem; }
+
+  /* Reveal */
+  .reveal-screen { padding-top: 1rem; padding-bottom: 1rem; }
+  .reveal-stage > .micro-label { margin-bottom: 1rem; }
+  .reveal-stage > button { margin-top: 1rem; }
+  .reveal-card { padding: 1rem; }
+  .reveal-card h1 { margin-top: 1.25rem; font-size: 3.75rem; }
+  .reveal-card .editorial-rule { margin: 1.25rem 0; }
+  .reveal-info { margin-top: 1.5rem; padding-top: 1.25rem; }
+
+  /* Results */
+  .results-screen { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+  .result-card { margin-top: 1.5rem; margin-bottom: 1.5rem; padding: 2rem; }
+
+  /* Review */
+  .review-screen { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+  .review-back { margin-bottom: 0.75rem; }
+  .review-head { margin-bottom: 0.75rem; }
+  .review-card { padding: 1rem; }
+  .review-grid { margin-top: 1rem; }
+  .review-text h2 { font-size: 3rem; }
+  .review-text h2 + p { margin-top: 0.75rem; }
+  .review-text .editorial-rule { margin: 0.75rem 0; }
+  .review-info { margin-top: 1rem; padding-top: 1rem; }
+  .review-nav { margin-top: 1rem; }
 }
 
 @keyframes float-in {
