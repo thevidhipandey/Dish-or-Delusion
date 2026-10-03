@@ -59,34 +59,36 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: "Cabin", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Abril Fatface", Georgia, serif;
 }
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.96 0.025 88);
-  --foreground: oklch(0.21 0.035 45);
-  --card: oklch(0.985 0.018 85);
-  --card-foreground: oklch(0.21 0.035 45);
-  --popover: oklch(0.985 0.018 85);
-  --popover-foreground: oklch(0.21 0.035 45);
-  --primary: oklch(0.61 0.17 32);
-  --primary-foreground: oklch(0.985 0.018 85);
-  --secondary: oklch(0.89 0.04 91);
-  --secondary-foreground: oklch(0.25 0.04 45);
-  --muted: oklch(0.93 0.03 84);
-  --muted-foreground: oklch(0.48 0.04 47);
-  --accent: oklch(0.77 0.12 88);
-  --accent-foreground: oklch(0.25 0.04 45);
+  --background: oklch(0.978 0.025 93);
+  --foreground: oklch(0.185 0.04 35);
+  --card: oklch(0.995 0.01 95);
+  --card-foreground: oklch(0.185 0.04 35);
+  --popover: oklch(0.995 0.01 95);
+  --popover-foreground: oklch(0.185 0.04 35);
+  --primary: oklch(0.47 0.2 18);
+  --primary-foreground: oklch(0.985 0.01 95);
+  --secondary: oklch(0.92 0.065 55);
+  --secondary-foreground: oklch(0.185 0.04 35);
+  --muted: oklch(0.945 0.03 85);
+  --muted-foreground: oklch(0.42 0.045 38);
+  --accent: oklch(0.87 0.2 114);
+  --accent-foreground: oklch(0.185 0.04 35);
   --destructive: oklch(0.58 0.19 28);
   --destructive-foreground: oklch(0.985 0.018 85);
-  --border: oklch(0.81 0.055 75);
-  --input: oklch(0.81 0.055 75);
-  --ring: oklch(0.61 0.17 32);
-  --chart-1: oklch(0.61 0.17 32);
-  --chart-2: oklch(0.53 0.11 151);
-  --chart-3: oklch(0.61 0.12 250);
-  --chart-4: oklch(0.77 0.12 88);
-  --chart-5: oklch(0.51 0.12 330);
+  --border: oklch(0.185 0.04 35);
+  --input: oklch(0.185 0.04 35);
+  --ring: oklch(0.47 0.2 18);
+  --chart-1: oklch(0.47 0.2 18);
+  --chart-2: oklch(0.87 0.2 114);
+  --chart-3: oklch(0.63 0.17 215);
+  --chart-4: oklch(0.69 0.2 35);
+  --chart-5: oklch(0.59 0.27 355);
   --sidebar: oklch(0.94 0.025 86);
   --sidebar-foreground: oklch(0.21 0.035 45);
   --sidebar-primary: oklch(0.61 0.17 32);
@@ -140,7 +142,7 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+    font-family: "Cabin", ui-sans-serif, system-ui, sans-serif;
     letter-spacing: 0;
   }
 }
@@ -149,7 +151,7 @@
   .dish-app {
     position: relative;
     min-height: 100vh;
-    overflow: hidden;
+    overflow: clip;
     background: var(--color-background);
   }
 
@@ -157,15 +159,21 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    opacity: 0.28;
+    opacity: 0.42;
     content: "";
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E");
+    background-image: radial-gradient(var(--color-primary) 0.7px, transparent 0.7px), url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+    background-size: 24px 24px, 160px 160px;
   }
 
   .display-font {
-    font-family: Georgia, "Times New Roman", serif;
-    letter-spacing: -0.02em;
+    font-family: "Abril Fatface", Georgia, serif;
+    letter-spacing: 0;
   }
+
+  .micro-label { font-family: "DM Mono", monospace; font-size: 0.68rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; }
+  .brand-title { text-transform: uppercase; text-shadow: 5px 5px 0 var(--color-secondary); }
+  .zine-highlight { display: inline-block; color: var(--color-primary); transform: rotate(-7deg); }
+  .zine-header { border-bottom: 2px solid var(--color-foreground); }
 
   .editorial-rule {
     height: 1px;
@@ -173,11 +181,11 @@
   }
 
   .dish-card-shadow {
-    box-shadow: 0 22px 45px oklch(0.32 0.04 45 / 0.13), 0 3px 0 oklch(0.32 0.04 45 / 0.07);
+    box-shadow: 8px 8px 0 var(--color-foreground);
   }
 
   .ink-button {
-    box-shadow: 4px 4px 0 var(--color-foreground);
+    box-shadow: 5px 5px 0 var(--color-foreground);
     transition: transform 160ms ease, box-shadow 160ms ease;
   }
 
@@ -185,6 +193,32 @@
     transform: translate(2px, 2px);
     box-shadow: 2px 2px 0 var(--color-foreground);
   }
+
+  .choice-button { box-shadow: 3px 3px 0 var(--color-foreground); transition: transform 150ms ease, box-shadow 150ms ease; }
+  .choice-button:hover { transform: translateY(-2px) rotate(-1deg); box-shadow: 5px 5px 0 var(--color-foreground); }
+  .game-card { transform-origin: center 90%; }
+  .preview-card { box-shadow: 5px 5px 0 var(--color-foreground); }
+  .dish-photo { max-width: none; width: 500%; height: 200%; object-fit: cover; }
+  .swipe-stamp { background: var(--color-card); box-shadow: 3px 3px 0 currentColor; transform: rotate(-6deg); }
+
+  .landing-stage::before { content: "*"; position: absolute; left: 2%; top: 18%; color: var(--color-chart-5); font: 8rem/1 "Abril Fatface"; transform: rotate(15deg); opacity: 0.13; }
+  .landing-collage { min-height: 32rem; }
+  .collage-photo { position: absolute; overflow: hidden; border: 3px solid var(--color-foreground); background: var(--color-card); box-shadow: 7px 7px 0 var(--color-foreground); }
+  .collage-photo-main { inset: 2.5rem 1rem 3rem 2rem; transform: rotate(3deg); }
+  .collage-photo-main img { width: 500%; height: 200%; object-position: 50% 0% !important; }
+  .collage-photo-main span { position: absolute; bottom: 0.8rem; left: 0.8rem; background: var(--color-primary); color: var(--color-primary-foreground); padding: 0.45rem 0.65rem; font-weight: 900; font-size: 0.7rem; }
+  .collage-photo-small { right: -1rem; bottom: 0; width: 42%; height: 38%; transform: rotate(-8deg); }
+  .collage-photo-small img { width: 500%; height: 200%; object-position: 50% 100% !important; }
+  .collage-label { position: absolute; z-index: 5; border: 2px solid var(--color-foreground); padding: 0.55rem 0.7rem; font-size: 0.67rem; font-weight: 900; }
+  .collage-label-one { top: 0; right: 0; background: var(--color-accent); transform: rotate(5deg); }
+  .collage-label-two { bottom: 0.8rem; left: 0; background: var(--color-chart-5); color: var(--color-primary-foreground); transform: rotate(4deg); }
+  .sticker { position: absolute; z-index: 6; display: grid; place-items: center; border: 2px solid var(--color-foreground); }
+  .sticker-one { left: 0; top: 8%; width: 5.5rem; height: 5.5rem; border-radius: 50%; background: var(--color-chart-5); color: var(--color-primary-foreground); font-weight: 900; line-height: 0.9; transform: rotate(-12deg); }
+  .sticker-two { right: 4%; top: 36%; width: 4.5rem; height: 4.5rem; background: var(--color-accent); transform: rotate(12deg); }
+  .sauce-splat { position: absolute; right: 3%; top: 1%; width: 4rem; height: 4rem; border-radius: 40% 60% 65% 35%; background: var(--color-primary); transform: rotate(25deg); }
+  .landing-note { position: absolute; font: 700 0.7rem "DM Mono"; color: var(--color-chart-5); }
+  .landing-note-left { left: -1rem; bottom: -1rem; transform: rotate(-8deg); }
+  .landing-note-right { right: 12%; top: 20%; transform: rotate(7deg); }
 
   .ink-button:active {
     transform: translate(4px, 4px);
@@ -216,7 +250,7 @@
   }
 
   .reveal-correct {
-    box-shadow: 0 22px 45px oklch(0.32 0.04 45 / 0.13), 0 3px 0 oklch(0.32 0.04 45 / 0.07), 0 0 0 1px oklch(0.53 0.11 151 / 0.14);
+    box-shadow: 8px 8px 0 var(--color-chart-2);
   }
 
   .confetti-burst {
@@ -261,6 +295,14 @@
     border-radius: 999px;
     transform: rotate(-5deg);
   }
+}
+
+@media (max-width: 639px) {
+  .brand-title { text-shadow: 3px 3px 0 var(--color-secondary); }
+  .landing-collage { min-height: 24rem; }
+  .collage-photo-main { inset: 2rem 1.5rem 2.5rem 1.5rem; }
+  .game-card { min-height: 39rem; }
+  .dish-photo { min-height: 14rem; }
 }
 
 @keyframes float-in {
