@@ -198,17 +198,15 @@
   .choice-button:hover { transform: translateY(-2px) rotate(-1deg); box-shadow: 5px 5px 0 var(--color-foreground); }
   .game-card { transform-origin: center 90%; }
   .preview-card { box-shadow: 5px 5px 0 var(--color-foreground); }
-  .dish-photo { max-width: none; width: 500%; height: 200%; object-fit: cover; }
+  .dish-photo { position: absolute; max-width: none; width: 500%; height: 200%; object-fit: fill; }
   .swipe-stamp { background: var(--color-card); box-shadow: 3px 3px 0 currentColor; transform: rotate(-6deg); }
 
   .landing-stage::before { content: "*"; position: absolute; left: 2%; top: 18%; color: var(--color-chart-5); font: 8rem/1 "Abril Fatface"; transform: rotate(15deg); opacity: 0.13; }
   .landing-collage { min-height: 32rem; }
   .collage-photo { position: absolute; overflow: hidden; border: 3px solid var(--color-foreground); background: var(--color-card); box-shadow: 7px 7px 0 var(--color-foreground); }
   .collage-photo-main { inset: 2.5rem 1rem 3rem 2rem; transform: rotate(3deg); }
-  .collage-photo-main img { width: 500%; height: 200%; object-position: 50% 0% !important; }
   .collage-photo-main span { position: absolute; bottom: 0.8rem; left: 0.8rem; background: var(--color-primary); color: var(--color-primary-foreground); padding: 0.45rem 0.65rem; font-weight: 900; font-size: 0.7rem; }
   .collage-photo-small { right: -1rem; bottom: 0; width: 42%; height: 38%; transform: rotate(-8deg); }
-  .collage-photo-small img { width: 500%; height: 200%; object-position: 50% 100% !important; }
   .collage-label { position: absolute; z-index: 5; border: 2px solid var(--color-foreground); padding: 0.55rem 0.7rem; font-size: 0.67rem; font-weight: 900; }
   .collage-label-one { top: 0; right: 0; background: var(--color-accent); transform: rotate(5deg); }
   .collage-label-two { bottom: 0.8rem; left: 0; background: var(--color-chart-5); color: var(--color-primary-foreground); transform: rotate(4deg); }
