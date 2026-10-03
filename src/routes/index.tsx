@@ -20,9 +20,9 @@ const accentClasses: Record<Dish["color"], string> = {
   ocean: "bg-chart-3 text-primary-foreground",
 };
 
-const imagePositions: Record<number, string> = {
-  1: "0% 0%", 2: "25% 0%", 3: "50% 0%", 4: "75% 0%", 5: "100% 0%",
-  6: "0% 100%", 7: "25% 100%", 8: "50% 100%", 9: "75% 100%", 10: "100% 100%",
+const imagePositions: Record<number, { left: string; top: string }> = {
+  1: { left: "0%", top: "0%" }, 2: { left: "-100%", top: "0%" }, 3: { left: "-200%", top: "0%" }, 4: { left: "-300%", top: "0%" }, 5: { left: "-400%", top: "0%" },
+  6: { left: "0%", top: "-100%" }, 7: { left: "-100%", top: "-100%" }, 8: { left: "-200%", top: "-100%" }, 9: { left: "-300%", top: "-100%" }, 10: { left: "-400%", top: "-100%" },
 };
 
 export const Route = createFileRoute("/")({
@@ -459,6 +459,8 @@ function Info({ label, value }: { label: string; value: string }) {
   return <div><p className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">{label}</p><p className="mt-1 text-sm font-semibold leading-5 text-foreground">{value}</p></div>;
 }
 
-function DishImage({ dish, eager = false }: { dish: Dish; eager?: boolean }) {
-  return <img src={dishContactSheet} alt={`${dish.name} editorial food photograph`} className="dish-photo h-full w-full object-cover" style={{ objectPosition: imagePositions[dish.id] }} loading={eager ? "eager" : "lazy"} width={1920} height={768} />;
+function DishImage({ dish, eager = false }: { dish: Dish | undefined; eager?: boolean }) {
+  if (!dish) return null;
+  const position = imagePositions[dish.id] ?? { left: "0%", top: "0%" };
+  return <img src={dishContactSheet} alt={`${dish.name} editorial food photograph`} className="dish-photo" style={position} loading={eager ? "eager" : "lazy"} width={1920} height={768} />;
 }
